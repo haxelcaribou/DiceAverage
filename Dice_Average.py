@@ -36,8 +36,8 @@ ans = 0
 
 # compile regexes
 diceRegex = re.compile(r"^(\d+d\d+(?=( |$)))+")
-topRegex = re.compile(r"(?<=t)\d+$")
-bottomRegex = re.compile(r"(?<=b)\d+$")
+diceNumberRegex = re.compile(r"^\d+(?=d)")
+diceSidesRegex = re.compile(r"(?<=d)\d+")
 
 
 def parseString(input):
@@ -105,7 +105,16 @@ def getStats(stats):
     for val in stats:
         sum += val*stats[val]
         amt += stats[val]
-    return sum/amt
+
+    avg = sum/amt
+
+    keys = stats.keys()
+
+    print(ANSI.BOLD, "Average = {:g}".format(avg), ANSI.END, sep="")
+    print(ANSI.BOLD, "Minimum = {:g}".format(min(keys)), ANSI.END, sep="")
+    print(ANSI.BOLD, "Maximum = {:g}".format(max(keys)), ANSI.END, sep="")
+
+    return avg
 
 
 def clearScreen():
@@ -145,7 +154,6 @@ def run():
         else:
             try:
                 ans = getStats(parseString(i))
-                print(ANSI.BOLD, "Average = {:g}".format(ans), ANSI.END, sep="")
             except ValueError as e:
                 print(e)
             except ZeroDivisionError:

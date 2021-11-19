@@ -36,6 +36,8 @@ ans = 0
 
 # compile regexes
 diceRegex = re.compile(r"^(\d+d\d+(?=( |$)))+")
+topRegex = re.compile(r"(?<=t)\d+$")
+bottomRegex = re.compile(r"(?<=b)\d+$")
 
 
 def parseString(input):
@@ -51,8 +53,8 @@ def parseString(input):
 def avgDie(input):
     print(ANSI.GREEN + input + ANSI.END)
 
-    numDice = int(re.search(r"^\d+(?=d)", input).group())
-    diceSides = int(re.search(r"(?<=d)\d+", input).group())
+    numDice = int(diceNumberRegex.search(input).group())
+    diceSides = int(diceSidesRegex.search(input).group())
     if numDice == 0 or diceSides == 0:
         return {}
 
@@ -148,6 +150,7 @@ def run():
                 print(e)
             except ZeroDivisionError:
                 print("Divide by Zero")
+
 
 if __name__ == '__main__':
     run()

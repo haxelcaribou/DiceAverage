@@ -15,7 +15,6 @@ except ImportError:
     pass
 
 
-
 statsGraph = False
 
 
@@ -66,8 +65,8 @@ def avgDie(input):
     numCombinations = math.pow(diceSides, numDice)
     for i in range(numDice):
         newStats = {}
-        for n in range(1, diceSides+1):
-            newStats[n] = 1;
+        for n in range(1, diceSides + 1):
+            newStats[n] = 1
         stats = addStats(stats, newStats)
 
     #print(ANSI.BOLD, str(stats), ANSI.END, "\n", sep="")
@@ -81,7 +80,7 @@ def avgDice(input):
     total = {}
 
     for die in dice:
-        total = addStats(total,avgDie(die.strip()))
+        total = addStats(total, avgDie(die.strip()))
 
     return total
 
@@ -96,10 +95,10 @@ def addStats(stats1, stats2):
 
     for n1 in stats1:
         for n2 in stats2:
-            if n1+n2 in newStats:
-                newStats[n1+n2] += stats1[n1] + stats2[n2] - 1
+            if n1 + n2 in newStats:
+                newStats[n1 + n2] += stats1[n1] + stats2[n2] - 1
             else:
-                newStats[n1+n2] = stats1[n1] + stats2[n2] -1
+                newStats[n1 + n2] = stats1[n1] + stats2[n2] - 1
 
     return newStats
 
@@ -110,10 +109,10 @@ def printStats(stats):
     sum = 0
     amt = 0
     for val in stats:
-        sum += val*stats[val]
+        sum += val * stats[val]
         amt += stats[val]
 
-    avg = sum/amt
+    avg = sum / amt
 
     keys = stats.keys()
 
@@ -124,7 +123,7 @@ def printStats(stats):
     print()
 
     if statsGraph:
-        for n in range(min(keys),max(keys)+1):
+        for n in range(min(keys), max(keys) + 1):
             print("{:g}: ".format(n), end="", flush=True)
             if n in stats:
                 for i in range(stats[n]):

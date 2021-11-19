@@ -7,12 +7,6 @@ from os import system, name
 
 # At this point I'm just making a math interpeter
 
-# TODO
-# option to get average, min, and max of rolls instead of specific roll value
-# - How to deal with functions more complication than simple operators
-# - Possible simpler and seperate method or even seperate program entirely
-
-
 # import the readline module for arrow functionality if it exists
 try:
     import readline
@@ -41,68 +35,17 @@ class ANSI:
 ans = 0
 
 # compile regexes
-diceRegex = re.compile(r"^(\d+d\d+((t|b)\d+)?(?=( |$)))+")
-addRegex = re.compile(r"(-|\+)")
-intRegex = re.compile(r"^\d+$")
+diceRegex = re.compile(r"^(\d+d\d+(?=( |$)))+")
 
 
 def parseString(input):
     input = input.strip()
 
-    # convert numbers to integers
-    if intRegex.match(input):
-        return int(input.replace(" ", ""))
-
-    # do math if there are any math symbols
-    mathStrings = ("+", "-")
-    for sub in mathStrings:
-        if sub in input:
-            return parseMath(input)
-
     # if it's valid dice notation roll it
     if diceRegex.match(input):
         return avgDice(input)
 
-    # if either side of a math expression is empty replace it with zero
-    if input == "":
-        return 0
-
-    # gives the last valid answer
-    if input == "ans":
-        return ans
-
-    # handle shortcuts
-    if input == "t":
-        return avgDie("1d20")
-    if input == "a":
-        return avgDie("2d20b1")
-    if input == "d":
-        return avgDie("2d20t1")
-    if input == "s":
-        return avgDie("4d6b1")
-
     raise ValueError("Invalid Input")
-
-
-def parseMath(input):
-    parts = addRegex.split(input)
-    sum = parseString(parts[0])
-    output_string = "{:g}".format(sum)
-    i = 1
-    while i < len(parts):
-        term = parseString(parts[i + 1])
-        if parts[i] == "+":
-            sum += term
-            output_string += " + "
-        elif parts[i] == "-":
-            sum -= term
-            output_string += " - "
-        else:
-            raise ValueError("Unknown operator")
-        output_string += "{:g}".format(term)
-        i += 2
-    print("{} = {:g}\n".format(output_string, sum))
-    return sum
 
 
 def avgDie(input):
@@ -111,74 +54,56 @@ def avgDie(input):
     numDice = int(re.search(r"^\d+(?=d)", input).group())
     diceSides = int(re.search(r"(?<=d)\d+", input).group())
     if numDice == 0 or diceSides == 0:
-        return 0
+        return {}
 
-    tSearch = re.search(r"(?<=t)\d+$", input)
-    bSearch = re.search(r"(?<=b)\d+$", input)
-    if tSearch:
-        return removeDice(numDice, diceSides, int(tSearch.group()), True)
-    elif bSearch:
-        return removeDice(numDice, diceSides, int(bSearch.group()), False)
+    stats = {}
+    numCombinations = math.pow(diceSides, numDice)
+    for i in range(numDice):
+        newStats = {}
+        for n in range(1, diceSides+1):
+            newStats[n] = 1;
+        stats = addStats(stats, newStats)
 
-    sum = (diceSides + 1)/2 * numDice
+    #print(ANSI.BOLD, str(stats), ANSI.END, "\n", sep="")
 
-    print(ANSI.BOLD, str(sum), ANSI.END, "\n", sep="")
-
-    return sum
-
-
-def removeDice(num, dice, remove, top):
-    raise ValueError("Not yet implemented")
-
-    rolls = []
-
-    # roll num number of times
-    for i in range(num):
-        # get random number in range dice
-        roll = random.randint(1, dice)
-        info = {"roll": roll,
-                "order": i,
-                "removed": False}
-        rolls.append(info)
-
-    sortedRolls = sorted(rolls, key=lambda item: item.get("roll"))
-
-    if remove > num:
-        raise ValueError("More dice removed than rolled")
-
-    # print and sum
-    if top:
-        for i in range(remove):
-            rolls[sortedRolls[len(rolls) - i - 1]["order"]]["removed"] = True
-    else:
-        for i in range(remove):
-            rolls[sortedRolls[i]["order"]]["removed"] = True
-
-    sum = 0
-
-    # print and sum
-    for roll in rolls:
-        n = roll["roll"]
-        if roll["removed"]:
-            print(ANSI.RED, str(n), ANSI.END, sep="", end=" ", flush=True)
-        else:
-            print(n, end=" ", flush=True)
-            sum += n
-
-    print("\n", ANSI.BOLD, str(sum), ANSI.END, "\n", sep="")
-
-    return sum
+    return stats
 
 
 def avgDice(input):
     dice = input.split(" ")
 
-    total = 0
+    total = {}
 
     for die in dice:
-        total += avgDie(die.strip())
+        total = addStats(total,avgDie(die.strip()))
 
     return total
+
+
+def addStats(stats1, stats2):
+    if stats1 == {}:
+        return stats2
+    if stats2 == {}:
+        return stats1
+
+    newStats = {}
+
+    for n1 in stats1:
+        for n2 in stats2:
+            newStats[n1+n2] = stats1[n1] + stats2[n2]
+
+    return newStats
+
+
+def getStats(stats):
+    if stats == {}:
+        return 0
+    sum = 0
+    amt = 0
+    for val in stats:
+        sum += val*stats[val]
+        amt += stats[val]
+    return sum/amt
 
 
 def clearScreen():
@@ -188,7 +113,6 @@ def clearScreen():
         system('clear')
     else:
         print(ANSI.CLEAR, end="")
-
 
 
 def run():
@@ -218,7 +142,7 @@ def run():
 
         else:
             try:
-                ans = parseString(i)
+                ans = getStats(parseString(i))
                 print(ANSI.BOLD, "Average = {:g}".format(ans), ANSI.END, sep="")
             except ValueError as e:
                 print(e)

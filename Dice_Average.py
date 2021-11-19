@@ -15,6 +15,10 @@ except ImportError:
     pass
 
 
+
+statsGraph = False
+
+
 # define ANSI colors
 class ANSI:
     RED = '\033[91m'
@@ -92,12 +96,15 @@ def addStats(stats1, stats2):
 
     for n1 in stats1:
         for n2 in stats2:
-            newStats[n1+n2] = stats1[n1] + stats2[n2]
+            if n1+n2 in newStats:
+                newStats[n1+n2] += stats1[n1] + stats2[n2] - 1
+            else:
+                newStats[n1+n2] = stats1[n1] + stats2[n2] -1
 
     return newStats
 
 
-def getStats(stats):
+def printStats(stats):
     if stats == {}:
         return 0
     sum = 0
@@ -113,6 +120,16 @@ def getStats(stats):
     print(ANSI.BOLD, "Average = {:g}".format(avg), ANSI.END, sep="")
     print(ANSI.BOLD, "Minimum = {:g}".format(min(keys)), ANSI.END, sep="")
     print(ANSI.BOLD, "Maximum = {:g}".format(max(keys)), ANSI.END, sep="")
+
+    print()
+
+    if statsGraph:
+        for n in range(min(keys),max(keys)+1):
+            print("{:g}: ".format(n), end="", flush=True)
+            if n in stats:
+                for i in range(stats[n]):
+                    print("@", end="", flush=True)
+            print()
 
     return avg
 
@@ -153,7 +170,7 @@ def run():
 
         else:
             try:
-                ans = getStats(parseString(i))
+                ans = printStats(parseString(i))
             except ValueError as e:
                 print(e)
             except ZeroDivisionError:

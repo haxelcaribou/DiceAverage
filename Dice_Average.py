@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import random
 import re
 import math
 from os import system, name
@@ -15,11 +14,11 @@ except ImportError:
     pass
 
 
-statsGraph = False
+STATS_GRAPH = False
 
 
-# define ANSI colors
 class ANSI:
+    '''define ANSI colors'''
     RED = '\033[91m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
@@ -38,72 +37,74 @@ class ANSI:
 ans = 0
 
 # compile regexes
-diceRegex = re.compile(r"^(\d+d\d+(?=( |$)))+")
-diceNumberRegex = re.compile(r"^\d+(?=d)")
-diceSidesRegex = re.compile(r"(?<=d)\d+")
+DICE_REGEX = re.compile(r"^(\d+d\d+(?=( |$)))+")
+DICE_NUMBER_REGEX = re.compile(r"^\d+(?=d)")
+DICE_SIDES_REGEX = re.compile(r"(?<=d)\d+")
 
 
-def parseString(input):
-    input = input.strip()
+def parse_string(input_string):
+    '''take input string and decide where to send it'''
+    input_string = input_string.strip()
 
     # if it's valid dice notation roll it
-    if diceRegex.match(input):
-        return avgDice(input)
+    if DICE_REGEX.match(input_string):
+        return avg_dice(input_string)
 
     raise ValueError("Invalid Input")
 
 
-def avgDie(input):
-    print(ANSI.GREEN + input + ANSI.END)
+def avg_die(input_string):
+    print(ANSI.GREEN + input_string + ANSI.END)
 
-    numDice = int(diceNumberRegex.search(input).group())
-    diceSides = int(diceSidesRegex.search(input).group())
-    if numDice == 0 or diceSides == 0:
+    num_dice = int(DICE_NUMBER_REGEX.search(input_string).group())
+    dice_sides = int(DICE_SIDES_REGEX.search(input_string).group())
+    if num_dice == 0 or dice_sides == 0:
         return {}
 
     stats = {}
-    numCombinations = math.pow(diceSides, numDice)
-    for i in range(numDice):
-        newStats = {}
-        for n in range(1, diceSides + 1):
-            newStats[n] = 1
-        stats = addStats(stats, newStats)
+    num_combinations = math.pow(dice_sides, num_dice)
+    for i in range(num_dice):
+        new_stats = {}
+        for n in range(1, dice_sides + 1):
+            new_stats[n] = 1
+        stats = add_stats(stats, new_stats)
 
     #print(ANSI.BOLD, str(stats), ANSI.END, "\n", sep="")
 
     return stats
 
 
-def avgDice(input):
-    dice = input.split(" ")
+def avg_dice(input_string):
+    dice = input_string.split(" ")
 
     total = {}
 
     for die in dice:
-        total = addStats(total, avgDie(die.strip()))
+        total = add_stats(total, avg_die(die.strip()))
 
     return total
 
 
-def addStats(stats1, stats2):
+def add_stats(stats1, stats2):
     if stats1 == {}:
         return stats2
     if stats2 == {}:
         return stats1
 
-    newStats = {}
+    new_stats = {}
 
     for n1 in stats1:
         for n2 in stats2:
-            if n1 + n2 in newStats:
-                newStats[n1 + n2] += stats1[n1] + stats2[n2] - 1
+            if n1 + n2 in new_stats:
+                new_stats[n1 + n2] += stats1[n1] + stats2[n2] - 1
             else:
-                newStats[n1 + n2] = stats1[n1] + stats2[n2] - 1
+                new_stats[n1 + n2] = stats1[n1] + stats2[n2] - 1
 
-    return newStats
+    return new_stats
 
 
-def printStats(stats):
+def print_stats(stats):
+    '''take the generated statistics and print them'''
     if stats == {}:
         return 0
     sum = 0
@@ -122,7 +123,7 @@ def printStats(stats):
 
     print()
 
-    if statsGraph:
+    if STATS_GRAPH:
         for n in range(min(keys), max(keys) + 1):
             print("{:g}: ".format(n), end="", flush=True)
             if n in stats:
@@ -133,7 +134,8 @@ def printStats(stats):
     return avg
 
 
-def clearScreen():
+def clear_screen():
+    '''clear the terminal screen'''
     if name == 'nt':
         system('cls')
     elif name == "posix":
@@ -143,33 +145,29 @@ def clearScreen():
 
 
 def run():
+    '''main program'''
     # clear screen at program start
-    clearScreen()
+    clear_screen()
 
     # keep taking commands
     while 1:
         # take input
         i = input(ANSI.BLUE + "Enter Value: " + ANSI.END).strip().lower()
 
-        # help
-        if i == "help" or i == "info":
-            print()
-            print(helpText)
-
         # quit program
-        elif i == "exit" or i == "end" or i == "quit" or i == "q":
-            clearScreen()
+        if i in ("exit", "end", "quit", "q"):
+            clear_screen()
             break
 
         elif i == "clear":
-            clearScreen()
+            clear_screen()
 
         elif i == "":
             print("No Input Entered")
 
         else:
             try:
-                ans = printStats(parseString(i))
+                ans = print_stats(parse_string(i))
             except ValueError as e:
                 print(e)
             except ZeroDivisionError:

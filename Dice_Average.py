@@ -3,8 +3,13 @@
 import re
 import math
 from os import system, name
+import operator
 
 # At this point I'm just making a math interpeter
+
+# Yes I understand that I should probably be using a class but for some reason
+# magic methods didn't work when I tried them. IDK I'm just an idiot.
+
 
 # import the readline module for arrow functionality if it exists
 try:
@@ -42,6 +47,8 @@ DICE_NUMBER_REGEX = re.compile(r"^\d+(?=d)")
 DICE_SIDES_REGEX = re.compile(r"(?<=d)\d+")
 INT_REGEX = re.compile(r"^-? ?\d+$")
 FLOAT_REGEX = re.compile(r"^-? ?\d*\.\d+$")
+ADD_REGEX = re.compile(r"(\+|(?<=\w) ?-)")
+MULT_REGEX = re.compile(r"([\*/%])")
 
 
 def parse_string(input_string):
@@ -54,15 +61,22 @@ def parse_string(input_string):
 
     # convert numbers to integers
     if INT_REGEX.match(input_string):
-        return {int(input_string.replace(" ", "")):1}
+        return {int(input_string.replace(" ", "")): 1}
     # also convert decimals
     if FLOAT_REGEX.match(input_string):
-        return {float(input_string.replace(" ", "")):1}
+        return {float(input_string.replace(" ", "")): 1}
+
+    # do math if there are any math symbols
+    math_strings = ("+", "-", "*", "/", "%", "^")
+    for sub in math_strings:
+        if sub in input_string:
+            return parse_math(input_string)
 
     raise ValueError("Invalid Input")
 
 
 def avg_die(input_string):
+    '''get the statstics for a single type of die'''
     print(ANSI.GREEN + input_string + ANSI.END)
 
     num_dice = int(DICE_NUMBER_REGEX.search(input_string).group())
@@ -84,6 +98,7 @@ def avg_die(input_string):
 
 
 def avg_dice(input_string):
+    '''get the statstics for multiple types of dice'''
     dice = input_string.split(" ")
 
     total = {}
@@ -95,21 +110,95 @@ def avg_dice(input_string):
 
 
 def add_stats(stats1, stats2):
+    '''takes two dictionaries and combine them using addition'''
     if stats1 == {}:
         return stats2
     if stats2 == {}:
         return stats1
 
+    return cartesian(stats1, stats2, operator.add)
+
+
+def sub_stats(stats1, stats2):
+    '''takes two dictionaries and combine them using addition'''
+    if stats1 == {}:
+        return stats2
+    if stats2 == {}:
+        return stats1
+
+    return cartesian(stats1, stats2, operator.sub)
+
+
+def cartesian(stats1, stats2, op):
     new_stats = {}
 
     for n1 in stats1:
         for n2 in stats2:
-            if n1 + n2 in new_stats:
-                new_stats[n1 + n2] += stats1[n1] + stats2[n2] - 1
+            if op(n1, n2) in new_stats:
+                new_stats[op(n1, n2)] += stats1[n1] + stats2[n2] - 1
             else:
-                new_stats[n1 + n2] = stats1[n1] + stats2[n2] - 1
+                new_stats[op(n1, n2)] = stats1[n1] + stats2[n2] - 1
 
     return new_stats
+
+
+def parse_math(input_string):
+    '''Handle basic math'''
+    if ADD_REGEX.search(input_string):
+        parts = ADD_REGEX.split(input_string)
+        sum = parse_string(parts[0])
+        # output_string = "{:g}".format(sum)
+        i = 1
+        while i < len(parts):
+            term = parse_string(parts[i + 1])
+            if parts[i] == "+":
+                sum = add_stats(sum, term)
+                # output_string += " + "
+            else:
+                sum = sub_stats(sum, term)
+                # output_string += " - "
+            # output_string += "{:g}".format(term)
+            i += 2
+        # print("{} = {:g}\n".format(output_string, sum))
+        return sum
+
+    if "*" in input_string or "/" in input_string or "%" in input_string:
+        parts = MULT_REGEX.split(input_string)
+        product = parse_string(parts[0])
+        # output_string = "{:g}".format(product)
+        i = 1
+        while i < len(parts):
+            term = parse_string(parts[i + 1])
+            if parts[i] == "*":
+                product = cartesian(product, term, operator.mul)
+                # output_string += " * "
+            elif parts[i] == "/":
+                product = cartesian(product, term, operator.truediv)
+                # output_string += " / "
+            else:
+                product = cartesian(product, term, operator.mod)
+                # output_string += " % "
+            # output_string += "{:g}".format(term)
+            i += 2
+        # print("{} = {:g}\n".format(output_string, product))
+        return product
+
+    if "^" in input_string:
+        parts = input_string.split("^", 1)
+        base = parse_string(parts[0])
+        exponent = parse_string(parts[1])
+        power = cartesian(base, exponent, operator.pow)
+        # print("{:g} ^ {:g} = {:g}\n".format(base, exponent, power))
+        return power
+
+    if "-" in input_string:
+        stats = parse_string(input_string[1:])
+        new_stats = {}
+        for val in stats:
+            new_stats[-val] = stats[val]
+        return new_stats
+
+    raise ValueError("Invalid Input")
 
 
 def print_stats(stats):

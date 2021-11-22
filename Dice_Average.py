@@ -56,10 +56,10 @@ class Dist:
     def __eq__(self, other):
         if len(self) != len(other):
             return False
-        for val in self:
-            if not val in other:
+        for val in self.dist:
+            if not val in other.dist:
                 return False
-            if self[val] != other[val]:
+            if self.dist[val] != other.dist[val]:
                 return False
         return True
 
@@ -108,14 +108,14 @@ class Dist:
 
     def __neg__(self):
         new_stats = {}
-        for val in stats.dist:
-            new_stats[-val] = stats.dist[val]
+        for val in self.dist:
+            new_stats[-val] = self.dist[val]
         return Dist(new_stats)
 
     def __abs__(self):
         new_stats = {}
-        for val in stats.dist:
-            new_stats[abs(val)] = stats.dist[val]
+        for val in self.dist:
+            new_stats[abs(val)] = self.dist[val]
         return Dist(new_stats)
 
 

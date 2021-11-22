@@ -40,6 +40,8 @@ ans = 0
 DICE_REGEX = re.compile(r"^(\d+d\d+(?=( |$)))+")
 DICE_NUMBER_REGEX = re.compile(r"^\d+(?=d)")
 DICE_SIDES_REGEX = re.compile(r"(?<=d)\d+")
+INT_REGEX = re.compile(r"^-? ?\d+$")
+FLOAT_REGEX = re.compile(r"^-? ?\d*\.\d+$")
 
 
 def parse_string(input_string):
@@ -49,6 +51,13 @@ def parse_string(input_string):
     # if it's valid dice notation roll it
     if DICE_REGEX.match(input_string):
         return avg_dice(input_string)
+
+    # convert numbers to integers
+    if INT_REGEX.match(input_string):
+        return {int(input_string.replace(" ", "")):1}
+    # also convert decimals
+    if FLOAT_REGEX.match(input_string):
+        return {float(input_string.replace(" ", "")):1}
 
     raise ValueError("Invalid Input")
 

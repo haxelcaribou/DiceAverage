@@ -47,6 +47,22 @@ class Dist:
         else:
             raise ValueError()
 
+    def __str__(self):
+        return str(self.dist)
+
+    def __len__(self):
+        return len(self.dist)
+
+    def __eq__(self, other):
+        if len(self) != len(other):
+            return False
+        for val in self:
+            if not val in other:
+                return False
+            if self[val] != other[val]:
+                return False
+        return True
+
     def cartesian(self, other, op):
         new_stats = {}
 
@@ -94,6 +110,12 @@ class Dist:
         new_stats = {}
         for val in stats.dist:
             new_stats[-val] = stats.dist[val]
+        return Dist(new_stats)
+
+    def __abs__(self):
+        new_stats = {}
+        for val in stats.dist:
+            new_stats[abs(val)] = stats.dist[val]
         return Dist(new_stats)
 
 

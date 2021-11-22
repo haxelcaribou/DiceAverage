@@ -7,10 +7,6 @@ import operator
 
 # At this point I'm just making a math interpeter
 
-# Yes I understand that I should probably be using a class but for some reason
-# magic methods didn't work when I tried them. IDK I'm just an idiot.
-
-
 # import the readline module for arrow functionality if it exists
 try:
     import readline
@@ -38,6 +34,69 @@ class ANSI:
     CLEAR = '\033[2J\033[H'
 
 
+class Dist:
+    def __init__(self, arg1=None):
+        if arg1 is None:
+            self.dist = {}
+        elif isinstance(arg1, Dist):
+            self.dist = arg1.dist
+        elif isinstance(arg1, dict):
+            self.dist = arg1
+        elif isinstance(arg1, (int, float)):
+            self.dist = {arg1: 1}
+        else:
+            raise ValueError()
+
+    def cartesian(self, other, op):
+        new_stats = {}
+
+        for n1 in self.dist:
+            for n2 in other.dist:
+                if op(n1, n2) in new_stats:
+                    new_stats[op(n1, n2)] += self.dist[n1] + other.dist[n2] - 1
+                else:
+                    new_stats[op(n1, n2)] = self.dist[n1] + other.dist[n2] - 1
+
+        return Dist(new_stats)
+
+    def __add__(self, other):
+        if self.dist == {}:
+            return other
+        if other.dist == {}:
+            return self
+
+        return self.cartesian(other, operator.add)
+
+    def __sub__(self, other):
+        if self.dist == {}:
+            return other
+        if other.dist == {}:
+            return self
+
+        return self.cartesian(other, operator.sub)
+
+    def __mul__(self, other):
+        return self.cartesian(other, operator.mul)
+
+    def __truediv__(self, other):
+        return self.cartesian(other, operator.truediv)
+
+    def __floordiv__(self, other):
+        return self.cartesian(other, operator.floordiv)
+
+    def __mod__(self, other):
+        return self.cartesian(other, operator.mod)
+
+    def __pow__(self, other):
+        return self.cartesian(other, operator.pow)
+
+    def __neg__(self):
+        new_stats = {}
+        for val in stats.dist:
+            new_stats[-val] = stats.dist[val]
+        return Dist(new_stats)
+
+
 # set default answer
 ans = 0
 
@@ -61,10 +120,10 @@ def parse_string(input_string):
 
     # convert numbers to integers
     if INT_REGEX.match(input_string):
-        return {int(input_string.replace(" ", "")): 1}
+        return Dist(int(input_string.replace(" ", "")))
     # also convert decimals
     if FLOAT_REGEX.match(input_string):
-        return {float(input_string.replace(" ", "")): 1}
+        return Dist(float(input_string.replace(" ", "")))
 
     # do math if there are any math symbols
     math_strings = ("+", "-", "*", "/", "%", "^")
@@ -77,20 +136,20 @@ def parse_string(input_string):
 
 def avg_die(input_string):
     '''get the statstics for a single type of die'''
-    print(ANSI.GREEN + input_string + ANSI.END)
+    # print(ANSI.GREEN + input_string + ANSI.END)
 
     num_dice = int(DICE_NUMBER_REGEX.search(input_string).group())
     dice_sides = int(DICE_SIDES_REGEX.search(input_string).group())
     if num_dice == 0 or dice_sides == 0:
-        return {}
+        return Dist()
 
-    stats = {}
+    stats = Dist()
     num_combinations = math.pow(dice_sides, num_dice)
     for i in range(num_dice):
         new_stats = {}
         for n in range(1, dice_sides + 1):
             new_stats[n] = 1
-        stats = add_stats(stats, new_stats)
+        stats = Dist(stats) + Dist(new_stats)
 
     #print(ANSI.BOLD, str(stats), ANSI.END, "\n", sep="")
 
@@ -101,45 +160,12 @@ def avg_dice(input_string):
     '''get the statstics for multiple types of dice'''
     dice = input_string.split(" ")
 
-    total = {}
+    total = Dist()
 
     for die in dice:
-        total = add_stats(total, avg_die(die.strip()))
+        total = total + avg_die(die.strip())
 
     return total
-
-
-def add_stats(stats1, stats2):
-    '''takes two dictionaries and combine them using addition'''
-    if stats1 == {}:
-        return stats2
-    if stats2 == {}:
-        return stats1
-
-    return cartesian(stats1, stats2, operator.add)
-
-
-def sub_stats(stats1, stats2):
-    '''takes two dictionaries and combine them using addition'''
-    if stats1 == {}:
-        return stats2
-    if stats2 == {}:
-        return stats1
-
-    return cartesian(stats1, stats2, operator.sub)
-
-
-def cartesian(stats1, stats2, op):
-    new_stats = {}
-
-    for n1 in stats1:
-        for n2 in stats2:
-            if op(n1, n2) in new_stats:
-                new_stats[op(n1, n2)] += stats1[n1] + stats2[n2] - 1
-            else:
-                new_stats[op(n1, n2)] = stats1[n1] + stats2[n2] - 1
-
-    return new_stats
 
 
 def parse_math(input_string):
@@ -152,10 +178,10 @@ def parse_math(input_string):
         while i < len(parts):
             term = parse_string(parts[i + 1])
             if parts[i] == "+":
-                sum = add_stats(sum, term)
+                sum = sum + term
                 # output_string += " + "
             else:
-                sum = sub_stats(sum, term)
+                sum = sum - term
                 # output_string += " - "
             # output_string += "{:g}".format(term)
             i += 2
@@ -170,13 +196,13 @@ def parse_math(input_string):
         while i < len(parts):
             term = parse_string(parts[i + 1])
             if parts[i] == "*":
-                product = cartesian(product, term, operator.mul)
+                product = product * term
                 # output_string += " * "
             elif parts[i] == "/":
-                product = cartesian(product, term, operator.truediv)
+                product = product / term
                 # output_string += " / "
             else:
-                product = cartesian(product, term, operator.mod)
+                product = product % term
                 # output_string += " % "
             # output_string += "{:g}".format(term)
             i += 2
@@ -187,21 +213,19 @@ def parse_math(input_string):
         parts = input_string.split("^", 1)
         base = parse_string(parts[0])
         exponent = parse_string(parts[1])
-        power = cartesian(base, exponent, operator.pow)
+        power = base ** exponent
         # print("{:g} ^ {:g} = {:g}\n".format(base, exponent, power))
         return power
 
     if "-" in input_string:
-        stats = parse_string(input_string[1:])
-        new_stats = {}
-        for val in stats:
-            new_stats[-val] = stats[val]
-        return new_stats
+        return -parse_string(input_string[1:])
 
     raise ValueError("Invalid Input")
 
 
 def print_stats(stats):
+    stats = stats.dist
+
     '''take the generated statistics and print them'''
     if stats == {}:
         return 0
